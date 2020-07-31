@@ -173,6 +173,7 @@ func getAllStudent(w http.ResponseWriter, r *http.Request) {
       studentList.Address.Country = country
 
       fmt.Println(studentList)
+      w.Header().Set("Content-Type", "application/json; charset=utf-8")
       json.NewEncoder(w).Encode(studentList)
 }
 
