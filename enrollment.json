@@ -1,0 +1,46 @@
+{
+    "Term":[
+        {
+            "ID":2020001,
+            "Term_name" : "2020/21 Academic Year",
+            "Degree" : "Electrical and Computer Engineering"
+        },
+        {
+            "ID":2020002,
+            "Term_name" : "2020/21 Academic Year",
+            "Degree" : "Entertainment Innovation Center"
+        }
+    ]
+},
+{
+    "Course":[
+        {
+            "ID":"18-900",
+            "Course_name" : "Research, Entrepreneuship and Innovation",
+            "Schedule" : "Mon/Wed 10:30 am. - 11:50 am.",
+            "Unit": 12,
+            "Room":"TBA",
+            "Status":"Open"
+        },
+        {
+            "ID":"18-901",
+            "Course_name" : "Research, Entrepreneuship and Innovation",
+            "Schedule" : "Mon/Wed 10:30 am. - 11:50 am.",
+            "Unit": 12,
+            "Room":"TBA",
+            "Status":"Open"
+        }
+    ]
+},
+{
+    "Enrollment_status":[
+        {
+            "Status":"Success",
+            "Message":"This class has been added to your schedule."
+        },
+        {
+            "Status":"Error",
+            "Message":"Unable to add this class - requistes have not beet met"
+        }
+    ]
+}
