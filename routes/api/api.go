@@ -7,6 +7,7 @@ import(
 	"log"
 	
 	_ "github.com/lib/pq"
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -279,4 +280,42 @@ var EnrollmentApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
  
 	   w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	   json.NewEncoder(w).Encode(enrollmentList)
+})
+
+type Profile struct{
+	Name string
+	Uuid int
+}
+
+var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	var data Profile
+
+	jsonString := `
+	{
+		"name": "Pinyarat",
+		"uuid": 109877189
+	}
+	`
+	
+	json.Unmarshal([]byte(jsonString), &data)
+	fmt.Println(data.Name, data.Uuid)
+
+	var name = "Pinyarat"
+	var uuid = 109877189
+
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s", host, port, user, password, dbname, sslmode)
+	db, err := sql.Open("postgres", psqlInfo)
+   if err != nil {
+   panic(err)
+   }
+   defer db.Close()
+
+	sqlStatement := `UPDATE student SET first_name = $1 WHERE uuid = $2;`
+
+	_, err = db.Exec(sqlStatement, name, uuid)
+		if err != nil {
+  			panic(err)
+	}
+
+	fmt.Fprint(w, "Welcome to the UpdatePage!")
 })

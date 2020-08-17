@@ -18,20 +18,20 @@ import (
 )
 
 type Response struct {
-   Message string `json:"message"`
+   Message string
 }
 
 type Jwks struct {
-   Keys []JSONWebKeys `json:"keys"`
+   Keys []JSONWebKeys
 }
 
 type JSONWebKeys struct {
-   Kty string   `json:"kty"`
-   Kid string   `json:"kid"`
-   Use string   `json:"use"`
-   N   string   `json:"n"`
-   E   string   `json:"e"`
-   X5c []string `json:"x5c"`
+   Kty string
+   Kid string
+   Use string
+   N   string
+   E   string
+   X5c []string
 }
 
 
@@ -115,8 +115,9 @@ func StartServer() {
    r.HandleFunc("/home", homePage).Methods("GET")
    r.HandleFunc("/callback", callback.CallbackHandler).Methods("GET")
    r.HandleFunc("/login", login.LoginHandler).Methods("GET")
-   r.Handle("/profileApi", jwtMiddleware.Handler(api.ProfileApiHandler)).Methods("GET")
-   r.Handle("/enrollApi", jwtMiddleware.Handler(api.EnrollmentApiHandler)).Methods("GET")
+   r.Handle("/api/profile", jwtMiddleware.Handler(api.ProfileApiHandler)).Methods("GET")
+   r.Handle("/api/enroll", jwtMiddleware.Handler(api.EnrollmentApiHandler)).Methods("GET")
+   r.Handle("/api/profile", jwtMiddleware.Handler(api.UpdateProfileHandler)).Methods("POST")
    r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
    corsWrapper := cors.New(cors.Options{
