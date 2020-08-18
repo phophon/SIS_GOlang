@@ -115,7 +115,7 @@ func StartServer() {
    r.HandleFunc("/home", homePage).Methods("GET")
    r.HandleFunc("/callback", callback.CallbackHandler).Methods("GET")
    r.HandleFunc("/login", login.LoginHandler).Methods("GET")
-   r.Handle("/api/profile", jwtMiddleware.Handler(api.ProfileApiHandler)).Methods("GET")
+   r.Handle("/api/profile", api.ProfileApiHandler).Methods("GET")
    r.Handle("/api/enroll", jwtMiddleware.Handler(api.EnrollmentApiHandler)).Methods("GET")
    r.Handle("/api/profile", jwtMiddleware.Handler(api.UpdateProfileHandler)).Methods("POST")
    r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
