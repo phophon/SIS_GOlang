@@ -6,7 +6,7 @@ import(
 	"database/sql"
 	"log"
 	
-	_ "github.com/lib/pq""
+	_ "github.com/lib/pq"
 )
 
 const (
