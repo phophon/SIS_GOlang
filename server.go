@@ -125,5 +125,5 @@ func StartServer() {
       AllowedHeaders: []string{"Content-Type", "Origin", "Accept", "*"},
    })
 
-   http.ListenAndServe("0.0.0.0:3000", corsWrapper.Handler(r))
+   http.ListenAndServe("0.0.0.0:8910", corsWrapper.Handler(r))
 }
