@@ -5,7 +5,7 @@ import (
    "encoding/json"
    "io/ioutil"
    "errors"
-   "strings"
+//    "strings"
 
   "github.com/auth0/go-jwt-middleware"
   "github.com/dgrijalva/jwt-go"
@@ -36,22 +36,20 @@ type JSONWebKeys struct {
 
 
 func homePage(w http.ResponseWriter, r *http.Request) {
-   url := "https://dev-56plghcv.us.auth0.com/oauth/token"
+    url := "http://localhost:3000//api/profile"
 
-   payload := strings.NewReader("{\"client_id\":\"lSwt9K86dGvblSAhp2hXbQa2TOSPt5Oa\",\"client_secret\":\"sJn6M1AUle-v3mzup1NbDVcMgbvdcOMGMGlMHukmnEl_YWQgTFPzCmV9iZn8VWgK\",\"audience\":\"http://localhost:3000/api\",\"grant_type\":\"client_credentials\"}")
- 
-   req, _ := http.NewRequest("POST", url, payload)
- 
-   req.Header.Add("content-type", "application/json")
- 
-   res, _ := http.DefaultClient.Do(req)
- 
-   defer res.Body.Close()
-   body, _ := ioutil.ReadAll(res.Body)
- 
-   fmt.Println(res)
-   fmt.Println(string(body))
-   fmt.Fprint(w, string(body))
+	req, _ := http.NewRequest("GET", url, nil)
+
+	req.Header.Add("authorization", "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlFqVTNSa1kwTVVWR1F6WkNRVU0xTXpFMFJFUkZORUpCTWtaRlJqRTRNRGc0TWtRNU1VVTFNdyJ9.eyJpc3MiOiJodHRwczovL2Nta2wtb21lZ2EuYXV0aDAuY29tLyIsInN1YiI6IjNUbTZJQWFoeENiYm5ydlNWN1E0OFdld3JnY3FzWVJPQGNsaWVudHMiLCJhdWQiOiJodHRwczovL29tZWdhLW5leHQuY21rbC5hYy50aC8iLCJpYXQiOjE1OTc2NjIzMDMsImV4cCI6MTU5Nzc0ODcwMywiYXpwIjoiM1RtNklBYWh4Q2JibnJ2U1Y3UTQ4V2V3cmdjcXNZUk8iLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMifQ.g_C7jEzhY3dSBppAOxU3a9niBuXJ18UJbyxODqQDNovTsI4IIQVHx_Ph2sTdnj-HPHAcWPigS-mTXVFtZI336SOBnCU39etisidPju9ommD-_ntvvPzfsE7DL_vEQjSBJbhb9WgesOFBou38k_qosru1MBG9GiTp2Vm2SIhomyZeCuYUtDtxcQMiSal1xzPctK8Foj5ipd1Hr74O3gkDrkvIWXVhaitWyezMduuoM7n1ikxffAGqqUVOSec-JJW4fkDmMFI6kB1rNpO6Dwk4FxRqh_kN116TLiX33pKx8UVPOMX0-CyKT1EDPHf4LNLylqpGLoJjapOaapMFlXZElg")
+
+	res, _ := http.DefaultClient.Do(req)
+
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+  
+    fmt.Println(res)
+    fmt.Println(string(body))
+    fmt.Fprint(w, string(body))
  }
 
  func getPemCert(token *jwt.Token) (string, error) {

@@ -95,6 +95,8 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 	var state string
 	var zip string
 	var country string
+	var programid int
+	id := 109877189
  
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 	"password=%s dbname=%s sslmode=%s",
@@ -110,19 +112,19 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
    panic(err)
    }
  
-   result, err := db.Query("SELECT * FROM student")
+   result, err := db.Query(`SELECT * FROM student where uuid = $1;`, id)
 	if err != nil {
 	   panic(err)
 	   log.Fatal(err)
 	   }
  
 	   for result.Next() {
-		  if err := result.Scan(&uuid, &first_name, &last_name, &gender, &photo, &phone_number, &cmkl_email, &canvasid, &airtableid, &program, &personnal_email, &second_email); err != nil {
+		  if err := result.Scan(&uuid, &first_name, &last_name, &gender, &photo, &phone_number, &cmkl_email, &canvasid, &airtableid, &personnal_email, &second_email); err != nil {
 			 log.Fatal(err)
 		  }
 	   }
  
-	resultE, err := db.Query("SELECT * FROM emergency WHERE uuid = 109877189")
+	resultE, err := db.Query(`SELECT * FROM emergency WHERE uuid = $1;`, uuid)
 	   if err != nil {
 		  panic(err)
 		  log.Fatal(err)
@@ -148,7 +150,7 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 			 studentList.Emergency = append(studentList.Emergency, emergencyContact)
 		  }
  
-		  resultA, err := db.Query("SELECT * FROM address WHERE uuid = 109877189")
+		resultA, err := db.Query(`SELECT * FROM address WHERE uuid = $1;`, uuid)
 		  if err != nil {
 			 panic(err)
 			 log.Fatal(err)
@@ -159,6 +161,39 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 				   log.Fatal(err)
 				}
 			 }
+
+		resultPE, err := db.Query(`SELECT * FROM programenrollment WHERE uuid = $1;`, uuid)
+		  if err != nil {
+			 panic(err)
+			 log.Fatal(err)
+			 }
+
+			 var invoiceurl string
+			 var programenrollmentid int
+			 var registeredcredits string
+			 var status bool
+			 var type_ string
+
+			 for resultPE.Next() {
+				if err := resultPE.Scan(&invoiceurl, &programenrollmentid, &registeredcredits, &status, &type_, &uuid, &programid); err != nil {
+				   log.Fatal(err)
+				}
+			 }
+
+		resultP, err := db.Query(`SELECT * FROM program WHERE programid = $1;`, programid)
+		  if err != nil {
+			 panic(err)
+			 log.Fatal(err)
+			 }
+
+			 var shortname string
+
+			 for resultP.Next() {
+				if err := resultP.Scan(&programid, &program, &airtableid, &shortname); err != nil {
+				   log.Fatal(err)
+				}
+			 }
+
  
 	   studentList.First_name = first_name
 	   studentList.Last_name = last_name
