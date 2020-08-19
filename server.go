@@ -1,11 +1,8 @@
 package main
 import (
-   "fmt"
    "net/http"
    "encoding/json"
-   "io/ioutil"
    "errors"
-//    "strings"
 
   "github.com/auth0/go-jwt-middleware"
   "github.com/dgrijalva/jwt-go"
@@ -34,23 +31,37 @@ type JSONWebKeys struct {
    X5c []string
 }
 
+type Profile struct{
+	Name string
+	Uuid int
+}
 
-func homePage(w http.ResponseWriter, r *http.Request) {
-    url := "http://localhost:3000//api/profile"
 
-	req, _ := http.NewRequest("GET", url, nil)
+var HomePage = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    var data Profile
+    data.Name = "Pinyarat"
+    data.Uuid = 109877189
 
-	req.Header.Add("authorization", "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlFqVTNSa1kwTVVWR1F6WkNRVU0xTXpFMFJFUkZORUpCTWtaRlJqRTRNRGc0TWtRNU1VVTFNdyJ9.eyJpc3MiOiJodHRwczovL2Nta2wtb21lZ2EuYXV0aDAuY29tLyIsInN1YiI6IjNUbTZJQWFoeENiYm5ydlNWN1E0OFdld3JnY3FzWVJPQGNsaWVudHMiLCJhdWQiOiJodHRwczovL29tZWdhLW5leHQuY21rbC5hYy50aC8iLCJpYXQiOjE1OTc2NjIzMDMsImV4cCI6MTU5Nzc0ODcwMywiYXpwIjoiM1RtNklBYWh4Q2JibnJ2U1Y3UTQ4V2V3cmdjcXNZUk8iLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMifQ.g_C7jEzhY3dSBppAOxU3a9niBuXJ18UJbyxODqQDNovTsI4IIQVHx_Ph2sTdnj-HPHAcWPigS-mTXVFtZI336SOBnCU39etisidPju9ommD-_ntvvPzfsE7DL_vEQjSBJbhb9WgesOFBou38k_qosru1MBG9GiTp2Vm2SIhomyZeCuYUtDtxcQMiSal1xzPctK8Foj5ipd1Hr74O3gkDrkvIWXVhaitWyezMduuoM7n1ikxffAGqqUVOSec-JJW4fkDmMFI6kB1rNpO6Dwk4FxRqh_kN116TLiX33pKx8UVPOMX0-CyKT1EDPHf4LNLylqpGLoJjapOaapMFlXZElg")
 
-	res, _ := http.DefaultClient.Do(req)
+    // reqBody, err := json.Marshal(map[string]string{})
 
-	defer res.Body.Close()
-	body, _ := ioutil.ReadAll(res.Body)
-  
-    fmt.Println(res)
-    fmt.Println(string(body))
-    fmt.Fprint(w, string(body))
- }
+    // resp, err := http.Post("http://localhost:8910/api/v1/profile",
+	// 	"application/json", bytes.NewBuffer(reqBody))
+	// if err != nil {
+	// 	print(err)
+    // }
+    
+    // defer resp.Body.Close()
+	// body, err := ioutil.ReadAll(resp.Body)
+	// if err != nil {
+	// 	print(err)
+	// }
+    // fmt.Println(string(body))
+    // fmt.Fprint(w, string(body))
+
+    w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	   json.NewEncoder(w).Encode(data)
+ })
 
  func getPemCert(token *jwt.Token) (string, error) {
    cert := ""
@@ -110,12 +121,12 @@ func StartServer() {
 })
    r := mux.NewRouter()
 
-   r.HandleFunc("/home", homePage).Methods("GET")
+   r.Handle("/api/v1/profile", jwtMiddleware.Handler(api.UpdateProfileHandler)).Methods("POST")
+   r.HandleFunc("/home", HomePage).Methods("POST")
    r.HandleFunc("/callback", callback.CallbackHandler).Methods("GET")
    r.HandleFunc("/login", login.LoginHandler).Methods("GET")
-   r.Handle("/api/v1/profile", api.ProfileApiHandler).Methods("GET")
+   r.Handle("/api/v1/profile", jwtMiddleware.Handler(api.ProfileApiHandler)).Methods("GET")
    r.Handle("/api/enroll", jwtMiddleware.Handler(api.EnrollmentApiHandler)).Methods("GET")
-   r.Handle("/api/v1/profile", jwtMiddleware.Handler(api.UpdateProfileHandler)).Methods("POST")
    r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
    corsWrapper := cors.New(cors.Options{

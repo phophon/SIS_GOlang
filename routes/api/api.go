@@ -5,6 +5,8 @@ import(
 	"encoding/json"
 	"database/sql"
 	"log"
+	"io/ioutil"
+	"bytes"
 	
 	_ "github.com/lib/pq"
 )
@@ -212,7 +214,7 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
  
 	   w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(w).Encode(studentList)
-	//    fmt.Println(studentList)
+	   fmt.Println(studentList)
 })
 
 var EnrollmentApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -324,32 +326,50 @@ type Profile struct{
 var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	var data Profile
 
-	jsonString := `
-	{
-		"name": "Pinyarat",
-		"uuid": 109877189
+	reqBody, err := json.Marshal(map[string]string{})
+
+    resp, err := http.Post("http://localhost:8910/home",
+		"application/json", bytes.NewBuffer(reqBody))
+	if err != nil {
+		print(err)
+    }
+    
+    defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		print(err)
 	}
-	`
+    // fmt.Println(string(body))
+    // fmt.Fprint(w, string(body))
+
+	// jsonString := `
+	// {
+	// 	"name": "Pinyarat",
+	// 	"uuid": 109877189
+	// }
+	// `
 	
-	json.Unmarshal([]byte(jsonString), &data)
+	json.Unmarshal([]byte(string(body)), &data)
 	fmt.Println(data.Name, data.Uuid)
 
-	var name = "Pinyarat"
-	var uuid = 109877189
+// 	var name = "Pinyarat"
+// 	var uuid = 109877189
 
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s", host, port, user, password, dbname, sslmode)
-	db, err := sql.Open("postgres", psqlInfo)
-   if err != nil {
-   panic(err)
-   }
-   defer db.Close()
+// 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s", host, port, user, password, dbname, sslmode)
+// 	db, err := sql.Open("postgres", psqlInfo)
+//    if err != nil {
+//    panic(err)
+//    }
+//    defer db.Close()
 
-	sqlStatement := `UPDATE student SET first_name = $1 WHERE uuid = $2;`
+// 	sqlStatement := `UPDATE student SET first_name = $1 WHERE uuid = $2;`
 
-	_, err = db.Exec(sqlStatement, name, uuid)
-		if err != nil {
-  			panic(err)
-	}
+// 	_, err = db.Exec(sqlStatement, name, uuid)
+// 		if err != nil {
+//   			panic(err)
+// 	}
 
-	fmt.Fprint(w, "Welcome to the UpdatePage!")
+	fmt.Fprint(w, data)
+	// w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	//    json.NewEncoder(w).Encode(data)
 })
