@@ -123,7 +123,7 @@ func StartServer() {
 
    r.Handle("/api/v1/profile", jwtMiddleware.Handler(api.UpdateProfileHandler)).Methods("POST")
    r.HandleFunc("/home", HomePage).Methods("POST")
-   r.HandleFunc("/callback", callback.CallbackHandler).Methods("GET")
+   r.HandleFunc("/api/v1/callback", callback.CallbackHandler).Methods("GET")
    r.HandleFunc("/login", login.LoginHandler).Methods("GET")
    r.Handle("/api/v1/profile", jwtMiddleware.Handler(api.ProfileApiHandler)).Methods("GET")
    r.Handle("/api/enroll", jwtMiddleware.Handler(api.EnrollmentApiHandler)).Methods("GET")
