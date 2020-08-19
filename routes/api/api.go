@@ -212,7 +212,7 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
  
 	   w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(w).Encode(studentList)
-	   fmt.Println(studentList)
+	//    fmt.Println(studentList)
 })
 
 var EnrollmentApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
