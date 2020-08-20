@@ -122,9 +122,9 @@ func StartServer() {
    r := mux.NewRouter()
 
    r.Handle("/api/v1/profile", jwtMiddleware.Handler(api.UpdateProfileHandler)).Methods("POST")
-   r.HandleFunc("/home", HomePage).Methods("POST")
+   r.HandleFunc("/api/v1/home", HomePage).Methods("POST")
    r.HandleFunc("/api/v1/callback", callback.CallbackHandler).Methods("GET")
-   r.HandleFunc("/login", login.LoginHandler).Methods("GET")
+   r.HandleFunc("/api/v1/login", login.LoginHandler).Methods("GET")
    r.Handle("/api/v1/profile", jwtMiddleware.Handler(api.ProfileApiHandler)).Methods("GET")
    r.Handle("/api/enroll", jwtMiddleware.Handler(api.EnrollmentApiHandler)).Methods("GET")
    r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))

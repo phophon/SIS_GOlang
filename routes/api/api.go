@@ -328,7 +328,7 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 
 	reqBody, err := json.Marshal(map[string]string{})
 
-    resp, err := http.Post("http://localhost:8910/home",
+    resp, err := http.Post("http://localhost:8910/api/v1/home",
 		"application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		print(err)
