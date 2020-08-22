@@ -5,13 +5,27 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
+	"database/sql"
+	// "reflect"
+	// "encoding/json"
 
 	"github.com/coreos/go-oidc"
+	_ "github.com/lib/pq"
 
 	"app"
 	"auth"
 	"fmt"
 )
+
+const (
+	host     = "omega-postgresql-sgp1-08776-do-user-4090996-0.db.ondigitalocean.com"
+	port     = 25061
+	user     = "omega_rew"
+	password = "c6eqgnwwv09cxlzo"
+	dbname   = "TestPool"
+	sslmode = "require"
+  )
 
 func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := app.Store.Get(r, "auth-session")
@@ -70,13 +84,62 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// enc := json.NewEncoder(os.Stdout)
+	// enc.Encode(profile)
+
+	mail := strings.Split(profile["sub"].(string), "|")[1]
+	firstname := profile["given_name"].(string)
+	lastname := profile["family_name"].(string)
+	photo := profile["picture"].(string)
+	var cmkl_email string
+
+	fmt.Println(firstname)
+	fmt.Println(lastname)
+	fmt.Println(mail)
 	fmt.Println(profile)
-	fmt.Println(" ")
+	fmt.Println("")
 	fmt.Println(rawIDToken)
-	fmt.Println(" ")
-	fmt.Println(token.AccessToken)
+	// fmt.Println(token.AccessToken)
+
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s", host, port, user, password, dbname, sslmode)
+	db, err := sql.Open("postgres", psqlInfo)
+   if err != nil {
+   panic(err)
+   }
+   defer db.Close()
+
+   result, err := db.Query(`SELECT cmkl_email FROM student WHERE cmkl_email = $1;`, mail)
+	if err != nil {
+	   panic(err)
+	   log.Fatal(err)
+	   }
+ 
+	   for result.Next() {
+		  if err := result.Scan(&cmkl_email); err != nil {
+			 log.Fatal(err)
+		  }
+	   }
+
+	   if cmkl_email == "" {
+		   
+		sqlStatement := `INSERT INTO student (uuid, first_name, last_name, cmkl_email, tokenj, photo) values($1, $2, $3, $4, $5, $6);`
+
+		_, err = db.Exec(sqlStatement, 0000, firstname, lastname, mail, rawIDToken, photo)
+			if err != nil {
+				panic(err)
+				}
+		fmt.Println("passed")
+	   } else {
+		sqlStatement := `UPDATE student SET tokenj = $1 WHERE cmkl_email = $2;`
+
+		_, err = db.Exec(sqlStatement, rawIDToken, mail)
+		if err != nil {
+			panic(err)
+			}
+		fmt.Println("passed")
+	   }
 
 
-	// Redirect to logged in page
 	http.Redirect(w, r, "/account", http.StatusSeeOther)
 }

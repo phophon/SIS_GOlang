@@ -7,8 +7,10 @@ import(
 	"log"
 	"io/ioutil"
 	"bytes"
+	"strings"
 	
 	_ "github.com/lib/pq"
+
 )
 
 const (
@@ -21,32 +23,32 @@ const (
   )
  
  type EmergencyContact struct {
-	Firstname string
-	Lastname string
-	Relationship string
-	Phone string
-	Email string
+	Firstname *string
+	Lastname *string
+	Relationship *string
+	Phone *string
+	Email *string
  }
  
  type Student struct {
-	First_name  string
-	Last_name      string
-	Program string
-	Cmkl_email string
+	First_name  *string
+	Last_name      *string
+	Program *string
+	Cmkl_email *string
 	UUID int
-	Photo string
+	Photo *string
 	Contact struct {
-	   Phone_number string
-	   Personnal_email string
-	   Second_email string
+	   Phone_number *string
+	   Personnal_email *string
+	   Second_email *string
 	}
 	Emergency []EmergencyContact
 	Address struct{
-	   Addressstatus string
-	   City string
-	   State string
-	   Zip string
-	   Country string
+	   Addressstatus *string
+	   City *string
+	   State *string
+	   Zip *string
+	   Country *string
 	}
  }
 
@@ -79,26 +81,29 @@ const (
 var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	var uuid int
-	var first_name string
-	var last_name string
-	var gender string
-	var photo string
-	var cmkl_email string
-	var phone_number string
-	var program string
-	var personnal_email string
-	var canvasid string
-	var airtableid string
-	var second_email string
+	var token *string
+	var first_name *string
+	var last_name *string
+	var gender *string
+	var photo *string
+	var cmkl_email *string
+	var phone_number *string
+	var program *string
+	var personnal_email *string
+	var canvasid *string
+	var airtableid *string
+	var second_email *string
 	var studentList Student
-	var address_id int
-	var address string
-	var city string
-	var state string
-	var zip string
-	var country string
-	var programid int
-	id := 109877189
+	var address_id *int
+	var address *string
+	var city *string
+	var state *string
+	var zip *string
+	var country *string
+	var programid *int
+	// id := 109877189
+	ua := r.Header.Get("Authorization")
+	fmt.Println(ua)
  
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 	"password=%s dbname=%s sslmode=%s",
@@ -114,14 +119,14 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
    panic(err)
    }
  
-   result, err := db.Query(`SELECT * FROM student where uuid = $1;`, id)
+   result, err := db.Query(`SELECT * FROM student WHERE tokenj = $1;`, strings.Split(ua, " ")[1])
 	if err != nil {
 	   panic(err)
 	   log.Fatal(err)
 	   }
  
 	   for result.Next() {
-		  if err := result.Scan(&uuid, &first_name, &last_name, &gender, &photo, &phone_number, &cmkl_email, &canvasid, &airtableid, &personnal_email, &second_email); err != nil {
+		  if err := result.Scan(&uuid, &first_name, &last_name, &gender, &photo, &phone_number, &cmkl_email, &canvasid, &airtableid, &personnal_email, &second_email, &token); err != nil {
 			 log.Fatal(err)
 		  }
 	   }
@@ -132,12 +137,12 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 		  log.Fatal(err)
 		  }
 		  
-		  var emergency_id int
-		  var first_nameE string
-		  var last_nameE string
-		  var relationship string
-		  var phone string
-		  var email string
+		  var emergency_id *int
+		  var first_nameE *string
+		  var last_nameE *string
+		  var relationship *string
+		  var phone *string
+		  var email *string
 		  var emergencyContact EmergencyContact
  
 		  for resultE.Next() {
@@ -170,11 +175,11 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 			 log.Fatal(err)
 			 }
 
-			 var invoiceurl string
-			 var programenrollmentid int
-			 var registeredcredits string
-			 var status bool
-			 var type_ string
+			 var invoiceurl *string
+			 var programenrollmentid *int
+			 var registeredcredits *string
+			 var status *bool
+			 var type_ *string
 
 			 for resultPE.Next() {
 				if err := resultPE.Scan(&invoiceurl, &programenrollmentid, &registeredcredits, &status, &type_, &uuid, &programid); err != nil {
@@ -188,7 +193,7 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 			 log.Fatal(err)
 			 }
 
-			 var shortname string
+			 var shortname *string
 
 			 for resultP.Next() {
 				if err := resultP.Scan(&programid, &program, &airtableid, &shortname); err != nil {
@@ -214,7 +219,6 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
  
 	   w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(w).Encode(studentList)
-	   fmt.Println(studentList)
 })
 
 var EnrollmentApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -328,7 +332,7 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 
 	reqBody, err := json.Marshal(map[string]string{})
 
-    resp, err := http.Post("http://localhost:8910/api/v1/home",
+    resp, err := http.Post("http://localhost:8910/home",
 		"application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		print(err)
