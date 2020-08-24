@@ -10,7 +10,6 @@ import(
 	"strings"
 	
 	_ "github.com/lib/pq"
-	"github.com/dgrijalva/jwt-go"
 
 )
 
@@ -53,35 +52,37 @@ const (
 	}
  }
 
- type Term struct{
-	id int
-	term_name string
-	// program string
- }
+//  type Term struct{
+// 	id int
+// 	term_name string
+// 	program string
+//  }
 
  type Course struct{
-	id string
-	course_name string
-	schedule string
-	unit int
-	room string
-	status string
+	Id *string
+	Course_name *string
+	Schedule *string
+	Unit int
+	Room *string
+	Instructor *string
+	Status *string
  }
 
- type EnrollStatus struct{
-	status string
-	message string
- }
+//  type EnrollStatus struct{
+// 	status string
+// 	message string
+//  }
 
  type Enrollment struct{
-	term []Term
-	course []Course
-	enrollstatus []EnrollStatus
+	// term []Term
+	Course []Course
+	// enrollstatus []EnrollStatus
  } 
 
 var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	var uuid int
+	var token *string
 	var first_name *string
 	var last_name *string
 	var gender *string
@@ -101,25 +102,9 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 	var zip *string
 	var country *string
 	var programid *int
+	// id := 109877189
 	ua := r.Header.Get("Authorization")
-	fmt.Println("")
-	fmt.Println("cilenttoken : ", ua)
-	fmt.Println("")
-
-
-	token, err := jwt.Parse(strings.Split(ua, " ")[1], func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-	
-		return []byte("my_secret_key"), nil
-	})
-
-
-	claims := token.Claims.(jwt.MapClaims);
-	fmt.Println("===== claims :", claims["https://omega.auth/email"].(string))
-	fmt.Println("claims passed")
-
+	fmt.Println(ua)
  
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 	"password=%s dbname=%s sslmode=%s",
@@ -135,14 +120,14 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
    panic(err)
    }
  
-   result, err := db.Query(`SELECT * FROM student WHERE cmkl_email = $1;`, claims["https://omega.auth/email"].(string))
+   result, err := db.Query(`SELECT * FROM student WHERE tokenj = $1;`, strings.Split(ua, " ")[1])
 	if err != nil {
 	   panic(err)
 	   log.Fatal(err)
 	   }
  
 	   for result.Next() {
-		  if err := result.Scan(&uuid, &first_name, &last_name, &gender, &photo, &phone_number, &cmkl_email, &canvasid, &airtableid, &personnal_email, &second_email); err != nil {
+		  if err := result.Scan(&uuid, &first_name, &last_name, &gender, &photo, &phone_number, &cmkl_email, &canvasid, &airtableid, &personnal_email, &second_email, &token); err != nil {
 			 log.Fatal(err)
 		  }
 	   }
@@ -254,30 +239,30 @@ var EnrollmentApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
    panic(err)
    }
 
-   result, err := db.Query("SELECT * FROM semester")
-   if err != nil {
-	panic(err)
-	log.Fatal(err)
-	}
+//    result, err := db.Query("SELECT * FROM semester")
+//    if err != nil {
+// 	panic(err)
+// 	log.Fatal(err)
+// 	}
 
  
-	   for result.Next() {
+// 	   for result.Next() {
 
-		var term Term
-		var semesterid int
-		var semestername string
-		var startdate string
-		var enddate string 
-		var airtableid string
-		var academicyearid int
+// 		var term Term
+// 		var semesterid int
+// 		var semestername string
+// 		var startdate string
+// 		var enddate string 
+// 		var airtableid string
+// 		var academicyearid int
 
-		  if err := result.Scan(&semesterid, &semestername, &startdate, &enddate, &airtableid, &academicyearid); err != nil {
-			 log.Fatal(err)
-		  }
-		  term.id = semesterid
-		  term.term_name = semestername
-		  enrollmentList.term = append(enrollmentList.term, term)
-	   }
+// 		  if err := result.Scan(&semesterid, &semestername, &startdate, &enddate, &airtableid, &academicyearid); err != nil {
+// 			 log.Fatal(err)
+// 		  }
+// 		  term.id = semesterid
+// 		  term.term_name = semestername
+// 		  enrollmentList.term = append(enrollmentList.term, term)
+//        }
 
 	   resultC, err := db.Query("SELECT * FROM course")
 	   if err != nil {
@@ -288,50 +273,52 @@ var EnrollmentApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 		for resultC.Next() {
 			
 			var courseid int
-			var code string
-			var description string
-			var name string
-			var airtableid string
+			var code *string
+			var description *string
+			var name *string
+			var airtableid *string
 			var unit int
-			var room string
-			var status string
-			var time string
+			var room *string
+			var status *string
+			var time *string
+			var instructor *string
 			var course Course
 
-			if err := resultC.Scan(&courseid, &code, &description, &name, &airtableid, &unit, &room, &status, &time); err != nil {
+			if err := resultC.Scan(&courseid, &code, &description, &name, &airtableid, &unit, &room, &status, &time, &instructor); err != nil {
 				log.Fatal(err)
 			 }
-			 course.id = code
-			 course.course_name = name
-			 course.schedule = time
-			 course.unit = unit
-			 course.room = room
-			 course.status = status
-			 enrollmentList.course = append(enrollmentList.course, course)
+			 course.Id = code
+			 course.Course_name = name
+			 course.Schedule = time
+			 course.Unit = unit
+			 course.Room = room
+			 course.Status = status
+			 course.Instructor = instructor
+			 enrollmentList.Course = append(enrollmentList.Course, course)
 		}
 
-		resultE, err := db.Query("SELECT * FROM courseenrollment")
-	   if err != nil {
-		panic(err)
-		log.Fatal(err)
-		}
+	// 	resultE, err := db.Query("SELECT * FROM courseenrollment")
+	//    if err != nil {
+	// 	panic(err)
+	// 	log.Fatal(err)
+	// 	}
 
-		for resultE.Next() {
+	// 	for resultE.Next() {
 
-			var courseofferid int
-			var uuid string
-			var status string
-			var message string
-			var enrollstatus EnrollStatus
+	// 		var courseofferid int
+	// 		var uuid string
+	// 		var status string
+	// 		var message string
+	// 		var enrollstatus EnrollStatus
 
-			if err := resultC.Scan(&courseofferid, &uuid, &status, &message); err != nil {
-				log.Fatal(err)
-			}
+	// 		if err := resultC.Scan(&courseofferid, &uuid, &status, &message); err != nil {
+	// 			log.Fatal(err)
+	// 		}
 
-			enrollstatus.status = status
-			enrollstatus.message = message
-			enrollmentList.enrollstatus = append(enrollmentList.enrollstatus, enrollstatus)
-		}
+	// 		enrollstatus.status = status
+	// 		enrollstatus.message = message
+	// 		enrollmentList.enrollstatus = append(enrollmentList.enrollstatus, enrollstatus)
+	// 	}
 		
  
 	   w.Header().Set("Content-Type", "application/json; charset=utf-8")

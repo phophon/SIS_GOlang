@@ -126,7 +126,7 @@ func StartServer() {
    r.HandleFunc("/api/v1/callback", callback.CallbackHandler).Methods("GET")
    r.HandleFunc("/api/v1/login", login.LoginHandler).Methods("GET")
    r.Handle("/api/v1/profile", jwtMiddleware.Handler(api.ProfileApiHandler)).Methods("GET")
-   r.Handle("/api/enroll", jwtMiddleware.Handler(api.EnrollmentApiHandler)).Methods("GET")
+   r.Handle("/api/v1/enroll", jwtMiddleware.Handler(api.EnrollmentApiHandler)).Methods("GET")
    r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
    corsWrapper := cors.New(cors.Options{
