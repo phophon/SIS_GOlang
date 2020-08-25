@@ -93,6 +93,7 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	lastname := profile["family_name"].(string)
 	photo := profile["picture"].(string)
 	var cmkl_email string
+	var uuid int
 
 	fmt.Println(firstname)
 	fmt.Println(lastname)
@@ -122,10 +123,22 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	   }
 
 	   if cmkl_email == "" {
+
+		resultA, err := db.Query(`SELECT uuid FROM student ORDER BY uuid DESC LIMIT 1;`)
+		if err != nil {
+		   panic(err)
+		   log.Fatal(err)
+		   }
+	 
+		   for resultA.Next() {
+			  if err := resultA.Scan(&uuid); err != nil {
+				 log.Fatal(err)
+			  }
+		   }
 		   
 		sqlStatement := `INSERT INTO student (uuid, first_name, last_name, cmkl_email, photo) values($1, $2, $3, $4, $5);`
 
-		_, err = db.Exec(sqlStatement, 0000, firstname, lastname, mail, photo)
+		_, err = db.Exec(sqlStatement, uuid+1, firstname, lastname, mail, photo)
 			if err != nil {
 				panic(err)
 				}
