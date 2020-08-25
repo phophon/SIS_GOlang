@@ -129,7 +129,7 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				panic(err)
 				}
-		fmt.Println("passed")
+		fmt.Println("passed INSERT")
 	   } else {
 		// sqlStatement := `UPDATE student SET tokenj = $1 WHERE cmkl_email = $2;`
 
@@ -137,7 +137,7 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		// if err != nil {
 		// 	panic(err)
 		// 	}
-		fmt.Println("passed")
+		fmt.Println("passed UPDATE")
 	   }
 
 
