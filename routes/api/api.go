@@ -10,6 +10,7 @@ import(
 	"strings"
 	
 	_ "github.com/lib/pq"
+	"github.com/dgrijalva/jwt-go"
 
 )
 
