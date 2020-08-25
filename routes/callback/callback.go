@@ -123,7 +123,6 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	   }
 
 	   if cmkl_email == "" {
-
 		resultA, err := db.Query(`SELECT uuid FROM student ORDER BY uuid DESC LIMIT 1;`)
 		if err != nil {
 		   panic(err)
