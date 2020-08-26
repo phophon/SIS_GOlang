@@ -24,33 +24,35 @@ const (
   )
  
  type EmergencyContact struct {
-	Firstname *string
-	Lastname *string
-	Relationship *string
-	Phone *string
-	Email *string
+	Firstname string
+	Lastname string
+	Relationship string
+	Phone string
+	Email string
+ }
+
+ type Address struct{
+	Addressstatus string
+	City string
+	State string
+	Zip string
+	Country string
  }
  
  type Student struct {
-	First_name  *string
-	Last_name      *string
-	Program *string
-	Cmkl_email *string
+	First_name  string
+	Last_name  string
+	Program string
+	Cmkl_email string
 	UUID int
-	Photo *string
+	Photo string
 	Contact struct {
-	   Phone_number *string
-	   Personnal_email *string
-	   Second_email *string
+	   Phone_number string
+	   Personnal_email string
+	   Second_email string
 	}
-	Emergency []EmergencyContact
-	Address struct{
-	   Addressstatus *string
-	   City *string
-	   State *string
-	   Zip *string
-	   Country *string
-	}
+	Emergency [2]EmergencyContact
+	Useraddress [3]Address
  }
 
 //  type Term struct{
@@ -83,25 +85,25 @@ const (
 var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	var uuid int
-	var first_name *string
-	var last_name *string
-	var gender *string
-	var photo *string
-	var cmkl_email *string
-	var phone_number *string
-	var program *string
-	var personnal_email *string
-	var canvasid *string
-	var airtableid *string
-	var second_email *string
+	var first_name sql.NullString
+	var last_name sql.NullString
+	var gender sql.NullString
+	var photo sql.NullString
+	var cmkl_email sql.NullString
+	var phone_number sql.NullString
+	var program sql.NullString
+	var personnal_email sql.NullString
+	var canvasid sql.NullString
+	var airtableid sql.NullString
+	var second_email sql.NullString
 	var studentList Student
-	var address_id *int
-	var address *string
-	var city *string
-	var state *string
-	var zip *string
-	var country *string
-	var programid *int
+	var address_id int
+	var addressstatus sql.NullString
+	var city sql.NullString
+	var state sql.NullString
+	var zip sql.NullString
+	var country sql.NullString
+	var programid int
 	// id := 109877189
 	ua := r.Header.Get("Authorization")
 	fmt.Println("")
@@ -154,24 +156,26 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 		  log.Fatal(err)
 		  }
 		  
-		  var emergency_id *int
-		  var first_nameE *string
-		  var last_nameE *string
-		  var relationship *string
-		  var phone *string
-		  var email *string
+		  var emergency_id int
+		  var count = 0
+		  var first_nameE sql.NullString
+		  var last_nameE sql.NullString
+		  var relationship sql.NullString
+		  var phone sql.NullString
+		  var email sql.NullString
 		  var emergencyContact EmergencyContact
  
 		  for resultE.Next() {
 			 if err := resultE.Scan(&emergency_id, &first_nameE, &last_nameE, &relationship, &phone, &email, &uuid); err != nil {
 				log.Fatal(err)
 			 }
-			 emergencyContact.Firstname = first_nameE
-			 emergencyContact.Lastname = last_nameE
-			 emergencyContact.Relationship = relationship
-			 emergencyContact.Phone = phone
-			 emergencyContact.Email = email
-			 studentList.Emergency = append(studentList.Emergency, emergencyContact)
+			 emergencyContact.Firstname = first_nameE.String
+			 emergencyContact.Lastname = last_nameE.String
+			 emergencyContact.Relationship = relationship.String
+			 emergencyContact.Phone = phone.String
+			 emergencyContact.Email = email.String
+			 studentList.Emergency[count] = emergencyContact
+			 count += 1
 		  }
  
 		resultA, err := db.Query(`SELECT * FROM address WHERE uuid = $1;`, uuid)
@@ -179,11 +183,22 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 			 panic(err)
 			 log.Fatal(err)
 			 }
+			 var countA = 0
+			 var address Address
  
 			 for resultA.Next() {
-				if err := resultA.Scan(&address_id, &address, &city, &state, &zip, &country, &uuid); err != nil {
+				if err := resultA.Scan(&address_id, &addressstatus, &city, &state, &zip, &country, &uuid); err != nil {
 				   log.Fatal(err)
+				   address.Addressstatus = addressstatus.String
+				   address.City = city.String
+				   address.State = state.String
+				   address.Zip = zip.String
+				   address.Country = country.String
+				   studentList.Useraddress[0] = address
+				   studentList.Useraddress[1] = address
+				   studentList.Useraddress[2] = address
 				}
+				countA += 1
 			 }
 
 		resultPE, err := db.Query(`SELECT * FROM programenrollment WHERE uuid = $1;`, uuid)
@@ -192,11 +207,11 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 			 log.Fatal(err)
 			 }
 
-			 var invoiceurl *string
-			 var programenrollmentid *int
-			 var registeredcredits *string
-			 var status *bool
-			 var type_ *string
+			 var invoiceurl* string
+			 var programenrollmentid int
+			 var registeredcredits* string
+			 var status bool
+			 var type_* string
 
 			 for resultPE.Next() {
 				if err := resultPE.Scan(&invoiceurl, &programenrollmentid, &registeredcredits, &status, &type_, &uuid, &programid); err != nil {
@@ -210,7 +225,7 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 			 log.Fatal(err)
 			 }
 
-			 var shortname *string
+			 var shortname string
 
 			 for resultP.Next() {
 				if err := resultP.Scan(&programid, &program, &airtableid, &shortname); err != nil {
@@ -218,24 +233,25 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 				}
 			 }
 
- 
-	   studentList.First_name = first_name
-	   studentList.Last_name = last_name
-	   studentList.Program = program
-	   studentList.Cmkl_email = cmkl_email
+			 
+	   studentList.First_name = first_name.String
+	   studentList.Last_name = last_name.String
+	   studentList.Program = program.String
+	   studentList.Cmkl_email = cmkl_email.String
 	   studentList.UUID = uuid
-	   studentList.Photo = photo
-	   studentList.Contact.Phone_number = phone_number
-	   studentList.Contact.Personnal_email = personnal_email
-	   studentList.Contact.Second_email = second_email
-	   studentList.Address.Addressstatus = address
-	   studentList.Address.City = city
-	   studentList.Address.State = state
-	   studentList.Address.Zip = zip
-	   studentList.Address.Country = country
+	   studentList.Photo = photo.String
+	   studentList.Contact.Phone_number = phone_number.String
+	   studentList.Contact.Personnal_email = personnal_email.String
+	   studentList.Contact.Second_email = second_email.String
+	//    studentList.Address.Addressstatus = address.String
+	//    studentList.Address.City = city.String
+	//    studentList.Address.State = state.String
+	//    studentList.Address.Zip = zip.String
+	//    studentList.Address.Country = country.String
  
 	   w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(w).Encode(studentList)
+		fmt.Println(studentList)
 })
 
 var EnrollmentApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -354,7 +370,7 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 
 	reqBody, err := json.Marshal(map[string]string{})
 
-    resp, err := http.Post("http://localhost:8910/home",
+    resp, err := http.Post("http://localhost:8910/api/v1/home",
 		"application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		print(err)
@@ -397,7 +413,6 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 			  }
 		   }
 		   
-
 		   if uuid == 0 {
 			var programenrollmentid int
 			var programid int
@@ -458,18 +473,21 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 						log.Fatal(err)
 					}
 				}
-
-			_, err = db.Exec(`INSERT INTO address (address_id, address, city, state, zip, country, uuid) values($1, $2, $3, $4, $5, $6, $7);`, address_id+1, data.Address.Addressstatus, data.Address.City, data.Address.State, data.Address.Zip, data.Address.Country, data.UUID)
-				if err != nil {
-					panic(err)
+				for i, s := range data.Useraddress {
+					sqlStatement := `INSERT INTO address (address_id, address, city, state, zip, country, uuid) values($1, $2, $3, $4, $5, $6, $7);`
+					_, err = db.Exec(sqlStatement, address_id+1+i, s.Addressstatus, s.City, s.State, s.Zip, s.Country, data.UUID)
+					if err != nil {
+						panic(err)
+					}
 				}
 				fmt.Println("inserted address")
 			} else {
 				sqlStatement := `UPDATE address SET address = $1, city = $2, state = $3, zip = $4, country = $5, uuid = $6 WHERE uuid = $7;`
-
-				_, err = db.Exec(sqlStatement, data.Address.Addressstatus, data.Address.City, data.Address.State, data.Address.Zip, data.Address.Country, data.UUID, data.UUID)
+				for i, s := range data.Useraddress {
+					_, err = db.Exec(sqlStatement, s.Addressstatus, s.City, s.State, s.Zip, s.Country, data.UUID, data.UUID)
 					if err != nil {
 						panic(err)
+					}
 				}
 				fmt.Println("updated address")
 			}
