@@ -103,6 +103,7 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 	var state sql.NullString
 	var zip sql.NullString
 	var country sql.NullString
+	var roles sql.NullString
 	var programid int
 	// id := 109877189
 	ua := r.Header.Get("Authorization")
@@ -145,7 +146,7 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 	   }
  
 	   for result.Next() {
-		  if err := result.Scan(&uuid, &first_name, &last_name, &gender, &photo, &phone_number, &cmkl_email, &canvasid, &airtableid, &personnal_email, &second_email); err != nil {
+		  if err := result.Scan(&uuid, &first_name, &last_name, &gender, &photo, &phone_number, &cmkl_email, &canvasid, &airtableid, &personnal_email, &second_email, &roles); err != nil {
 			 log.Fatal(err)
 		  }
 	   }
@@ -483,7 +484,7 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 				fmt.Println("inserted address")
 			} else {
 				sqlStatement := `UPDATE address SET address = $1, city = $2, state = $3, zip = $4, country = $5, uuid = $6 WHERE uuid = $7;`
-				for i, s := range data.Useraddress {
+				for _, s := range data.Useraddress {
 					_, err = db.Exec(sqlStatement, s.Addressstatus, s.City, s.State, s.Zip, s.Country, data.UUID, data.UUID)
 					if err != nil {
 						panic(err)
