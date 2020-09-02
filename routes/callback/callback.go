@@ -2,11 +2,12 @@ package callback
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
 	"strings"
-	"database/sql"
+
 	// "reflect"
 	// "encoding/json"
 
@@ -24,8 +25,8 @@ const (
 	user     = "omega_rew"
 	password = "c6eqgnwwv09cxlzo"
 	dbname   = "TestPool"
-	sslmode = "require"
-  )
+	sslmode  = "require"
+)
 
 func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := app.Store.Get(r, "auth-session")
@@ -93,7 +94,7 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	lastname := profile["family_name"].(string)
 	photo := profile["picture"].(string)
 	var cmkl_email string
-	var uuid int
+	var uuid sql.NullString
 
 	fmt.Println(firstname)
 	fmt.Println(lastname)
@@ -105,44 +106,44 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s", host, port, user, password, dbname, sslmode)
 	db, err := sql.Open("postgres", psqlInfo)
-   if err != nil {
-   panic(err)
-   }
-   defer db.Close()
-
-   result, err := db.Query(`SELECT cmkl_email FROM student WHERE cmkl_email = $1;`, mail)
 	if err != nil {
-	   panic(err)
-	   log.Fatal(err)
-	   }
- 
-	   for result.Next() {
-		  if err := result.Scan(&cmkl_email); err != nil {
-			 log.Fatal(err)
-		  }
-	   }
+		panic(err)
+	}
+	defer db.Close()
 
-	   if cmkl_email == "" {
+	result, err := db.Query(`SELECT cmkl_email FROM student WHERE cmkl_email = $1;`, mail)
+	if err != nil {
+		panic(err)
+		log.Fatal(err)
+	}
+
+	for result.Next() {
+		if err := result.Scan(&cmkl_email); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if cmkl_email == "" {
 		resultA, err := db.Query(`SELECT uuid FROM student ORDER BY uuid DESC LIMIT 1;`)
 		if err != nil {
-		   panic(err)
-		   log.Fatal(err)
-		   }
-	 
-		   for resultA.Next() {
-			  if err := resultA.Scan(&uuid); err != nil {
-				 log.Fatal(err)
-			  }
-		   }
-		   
+			panic(err)
+			log.Fatal(err)
+		}
+
+		for resultA.Next() {
+			if err := resultA.Scan(&uuid); err != nil {
+				log.Fatal(err)
+			}
+		}
+
 		sqlStatement := `INSERT INTO student (uuid, first_name, last_name, cmkl_email, photo) values($1, $2, $3, $4, $5);`
 
-		_, err = db.Exec(sqlStatement, uuid+1, firstname, lastname, mail, photo)
-			if err != nil {
-				panic(err)
-				}
+		_, err = db.Exec(sqlStatement, "61f109be-c815-48d8-abee-80bf968add40", firstname, lastname, mail, photo)
+		if err != nil {
+			panic(err)
+		}
 		fmt.Println("passed INSERT")
-	   } else {
+	} else {
 		// sqlStatement := `UPDATE student SET tokenj = $1 WHERE cmkl_email = $2;`
 
 		// _, err = db.Exec(sqlStatement, rawIDToken, mail)
@@ -150,8 +151,7 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		// 	panic(err)
 		// 	}
 		fmt.Println("passed UPDATE")
-	   }
-
+	}
 
 	http.Redirect(w, r, "/account", http.StatusSeeOther)
 }
