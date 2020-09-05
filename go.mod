@@ -44,3 +44,5 @@ replace user => ./routes/user
 replace templates => ./routes/templates
 
 replace api => ./routes/api
+
+replace handler => ./routes/handler
