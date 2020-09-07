@@ -20,9 +20,9 @@ import (
 
 var (
 	googleOauthConfig = &oauth2.Config{
-		RedirectURL:  "http://localhost:8910/GoogleCallback",
-		ClientID:     "1014101779527-e4bmq2ng6vv9cphl9n9t3lpmnv7405tl.apps.googleusercontent.com",
-		ClientSecret: "IRsbCiTQgkn_IkhHEHeerloH",
+		RedirectURL:  "https://omega-next.cmkl.ac.th/api/v1/GoogleCallback",
+		ClientID:     "346969593881-rhso1lgkgg6n5fgmqm05odobpemtsjae.apps.googleusercontent.com",
+		ClientSecret: "0QKs98ImeI4FyX_3_VURaQXu",
 		Scopes: []string{"https://www.googleapis.com/auth/userinfo.profile",
 			"https://www.googleapis.com/auth/userinfo.email"},
 		Endpoint: google.Endpoint,
@@ -32,14 +32,14 @@ var (
 )
 
 const htmlIndex = `<html><body>
-<a href="/GoogleLogin">Log in with Google</a>
+<a href="/api/v1/GoogleLogin">Log in with Google</a>
 </body></html>
 `
 
 func main() {
 	http.HandleFunc("/", handleMain)
-	http.HandleFunc("/GoogleLogin", handleGoogleLogin)
-	http.HandleFunc("/GoogleCallback", handleGoogleCallback)
+	http.HandleFunc("/api/v1/GoogleLogin", handleGoogleLogin)
+	http.HandleFunc("/api/v1/GoogleCallback", handleGoogleCallback)
 	fmt.Println(http.ListenAndServe("0.0.0.0:8910", nil))
 }
 
