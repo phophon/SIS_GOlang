@@ -138,6 +138,6 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(bearer)
 	w.Header().Add("Authorization", bearer)
 	// contents, err := ioutil.ReadAll(response.Body)
-	fmt.Fprintf(w, "%s", contents)
-	// http.Redirect(w, r, "/", http.StatusSeeOther)
+	// fmt.Fprintf(w, "%s", contents)
+	http.Redirect(w, r, "/account", http.StatusSeeOther)
 }

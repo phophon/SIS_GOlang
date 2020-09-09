@@ -153,9 +153,9 @@ func StartServer() {
 	r.HandleFunc("/api/v1/GoogleCallback", callback.CallbackHandler)
 	r.HandleFunc("/api/v1/home", HomePage).Methods("POST")
 	r.HandleFunc("/api/v1/callback", callback.CallbackHandler).Methods("GET")
-	r.Handle("/api/v1/profile", api.ProfileApiHandler).Methods("GET")
-	r.Handle("/api/v1/profile", api.UpdateProfileHandler).Methods("POST")
-	r.Handle("/api/v1/enroll", api.EnrollmentApiHandler).Methods("GET")
+	r.HandleFunc("/api/v1/profile", api.ProfileApiHandler).Methods("GET")
+	r.HandleFunc("/api/v1/profile", api.UpdateProfileHandler).Methods("POST")
+	r.HandleFunc("/api/v1/enroll", api.EnrollmentApiHandler).Methods("GET")
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 
 	corsWrapper := cors.New(cors.Options{
