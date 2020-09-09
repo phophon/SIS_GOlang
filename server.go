@@ -141,8 +141,13 @@ func handleMain(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	url := googleOauthConfig.AuthCodeURL(oauthStateString)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
 
 func StartServer() {
