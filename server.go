@@ -16,7 +16,7 @@ import (
 
 var (
 	googleOauthConfig = &oauth2.Config{
-		RedirectURL:  "http://localhost:8910/api/v1/GoogleCallback",
+		RedirectURL:  "https://omega-next.cmkl.ac.th/api/v1/GoogleCallback",
 		ClientID:     "346969593881-rhso1lgkgg6n5fgmqm05odobpemtsjae.apps.googleusercontent.com",
 		ClientSecret: "0QKs98ImeI4FyX_3_VURaQXu",
 		Scopes: []string{"https://www.googleapis.com/auth/userinfo.profile",
