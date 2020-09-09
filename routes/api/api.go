@@ -113,14 +113,18 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 	fmt.Println("")
 
 	token, err := jwt.Parse(strings.Split(ua, " ")[1], func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-
-		return []byte("my_secret_key"), nil
+		return []byte("secureSecretText"), nil
 	})
 
-	claims := token.Claims.(jwt.MapClaims)
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		fmt.Println("Couldn't parse claims")
+	}
+	fmt.Println(claims)
+
+	// if claims["exp"].(int64) < time.Now().UTC().Unix() {
+	// 	fmt.Println("JWT is expired")
+	// }
 	// fmt.Println("===== claims :", claims["https://omega.auth/email"].(string))
 	// fmt.Println("claims passed")
 
@@ -138,7 +142,7 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 		panic(err)
 	}
 
-	result, err := db.Query(`SELECT * FROM student WHERE cmkl_email = $1;`, claims["https://omega.auth/email"].(string))
+	result, err := db.Query(`SELECT * FROM student WHERE cmkl_email = $1;`, claims["CmklMail"].(string))
 	if err != nil {
 		panic(err)
 		log.Fatal(err)
@@ -216,7 +220,7 @@ var ProfileApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Req
 	var type_ *string
 
 	for resultPE.Next() {
-		if err := resultPE.Scan(&invoiceurl, &programenrollmentid, &registeredcredits, &status, &type_, &uuid, &programid); err != nil {
+		if err := resultPE.Scan(&invoiceurl, &programenrollmentid, &registeredcredits, &status, &type_, &programid, &uuid); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -356,16 +360,11 @@ var EnrollmentApiHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 	json.NewEncoder(w).Encode(enrollmentList)
 })
 
-type Profile struct {
-	Name string
-	Uuid int
-}
-
 var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	var data Student
-	var uuid int
-	var address_uuid int
-	var emergency_uuid int
+	var uuid sql.NullString
+	var address_uuid sql.NullString
+	var emergency_uuid sql.NullString
 
 	reqBody, err := json.Marshal(map[string]string{})
 
@@ -412,7 +411,7 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 		}
 	}
 
-	if uuid == 0 {
+	if uuid.String == " " {
 		var programenrollmentid int
 		var programid int
 
@@ -460,7 +459,7 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 		}
 	}
 
-	if address_uuid == 0 {
+	if address_uuid.String == "" {
 		var address_id int
 		result, err := db.Query(`SELECT address_id FROM address ORDER BY address_id DESC LIMIT 1;`)
 		if err != nil {
@@ -502,7 +501,7 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 		}
 	}
 
-	if emergency_uuid == 0 {
+	if emergency_uuid.String == "" {
 		var emergency_id int
 
 		result, err := db.Query(`SELECT emergency_id FROM emergency ORDER BY emergency_id DESC LIMIT 1;`)

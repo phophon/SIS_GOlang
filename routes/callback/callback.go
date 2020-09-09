@@ -1,21 +1,20 @@
 package callback
 
 import (
-	"context"
 	"database/sql"
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"strings"
 
 	// "reflect"
 	// "encoding/json"
 
-	"github.com/coreos/go-oidc"
+	"github.com/dgrijalva/jwt-go"
 	_ "github.com/lib/pq"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 
-	"app"
-	"auth"
 	"fmt"
 )
 
@@ -28,82 +27,76 @@ const (
 	sslmode  = "require"
 )
 
+var (
+	googleOauthConfig = &oauth2.Config{
+		RedirectURL:  "http://localhost:8910/api/v1/GoogleCallback",
+		ClientID:     "346969593881-rhso1lgkgg6n5fgmqm05odobpemtsjae.apps.googleusercontent.com",
+		ClientSecret: "0QKs98ImeI4FyX_3_VURaQXu",
+		Scopes: []string{"https://www.googleapis.com/auth/userinfo.profile",
+			"https://www.googleapis.com/auth/userinfo.email"},
+		Endpoint: google.Endpoint,
+	}
+	// Some random string, random for each request
+	oauthStateString = "random"
+)
+
+type customClaims struct {
+	FristName string
+	LastName  string
+	CmklMail  string
+	jwt.StandardClaims
+}
+
+// type Info struct {
+// 	Id             string
+// 	email          string
+// 	verified_email string
+// 	name           string
+// 	given_name     string
+// 	family_name    string
+// 	picture        string
+// 	locale         string
+// 	hd             string
+// }
+
 func CallbackHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := app.Store.Get(r, "auth-session")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 
-	if r.URL.Query().Get("state") != session.Values["state"] {
-		http.Error(w, "Invalid state parameter", http.StatusBadRequest)
-		return
-	}
-
-	authenticator, err := auth.NewAuthenticator()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	token, err := authenticator.Config.Exchange(context.TODO(), r.URL.Query().Get("code"))
-	if err != nil {
-		log.Printf("no token found: %v", err)
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
-	rawIDToken, ok := token.Extra("id_token").(string)
-	if !ok {
-		http.Error(w, "No id_token field in oauth2 token.", http.StatusInternalServerError)
-		return
-	}
-
-	oidcConfig := &oidc.Config{
-		ClientID: os.Getenv("AUTH0_CLIENT_ID"),
-	}
-
-	idToken, err := authenticator.Provider.Verifier(oidcConfig).Verify(context.TODO(), rawIDToken)
-
-	if err != nil {
-		http.Error(w, "Failed to verify ID Token: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Getting now the userInfo
-	var profile map[string]interface{}
-	if err := idToken.Claims(&profile); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	session.Values["id_token"] = rawIDToken
-	session.Values["access_token"] = token.AccessToken
-	session.Values["profile"] = profile
-	err = session.Save(r, w)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// enc := json.NewEncoder(os.Stdout)
-	// enc.Encode(profile)
-
-	mail := strings.Split(profile["sub"].(string), "|")[1]
-	firstname := profile["given_name"].(string)
-	lastname := profile["family_name"].(string)
-	photo := profile["picture"].(string)
 	var cmkl_email string
-	var uuid sql.NullString
+	var first_name string
+	var last_name string
+	var profile map[string]interface{}
 
-	fmt.Println(firstname)
-	fmt.Println(lastname)
-	fmt.Println(mail)
-	fmt.Println(profile)
-	fmt.Println("")
-	fmt.Println(rawIDToken)
-	// fmt.Println(token.AccessToken)
+	state := r.FormValue("state")
+	if state != oauthStateString {
+		fmt.Printf("invalid oauth state, expected '%s', got '%s'\n", oauthStateString, state)
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
 
+	code := r.FormValue("code")
+	token, err := googleOauthConfig.Exchange(oauth2.NoContext, code)
+	if err != nil {
+		fmt.Println("Code exchange failed with '%s'\n", err)
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+
+	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
+	fmt.Println(token.AccessToken)
+	defer response.Body.Close()
+	contents, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	if err := json.Unmarshal([]byte(contents), &profile); err != nil {
+		fmt.Println("ugh: ", err)
+	}
+	fmt.Println("profile: ", profile)
+	mail := profile["email"].(string)
+
+	// Qurry
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s", host, port, user, password, dbname, sslmode)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
@@ -111,47 +104,40 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	result, err := db.Query(`SELECT cmkl_email FROM student WHERE cmkl_email = $1;`, mail)
+	result, err := db.Query(`SELECT first_name, last_name, cmkl_email FROM student WHERE cmkl_email = $1;`, mail)
 	if err != nil {
 		panic(err)
 		log.Fatal(err)
 	}
 
 	for result.Next() {
-		if err := result.Scan(&cmkl_email); err != nil {
+		if err := result.Scan(&first_name, &last_name, &cmkl_email); err != nil {
 			log.Fatal(err)
 		}
 	}
+	fmt.Println(cmkl_email)
+	fmt.Println("passed Callback")
 
-	if cmkl_email == "" {
-		resultA, err := db.Query(`SELECT uuid FROM student ORDER BY uuid DESC LIMIT 1;`)
-		if err != nil {
-			panic(err)
-			log.Fatal(err)
-		}
-
-		for resultA.Next() {
-			if err := resultA.Scan(&uuid); err != nil {
-				log.Fatal(err)
-			}
-		}
-
-		sqlStatement := `INSERT INTO student (uuid, first_name, last_name, cmkl_email, photo) values($1, $2, $3, $4, $5);`
-
-		_, err = db.Exec(sqlStatement, "61f109be-c815-48d8-abee-80bf968add40", firstname, lastname, mail, photo)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("passed INSERT")
-	} else {
-		// sqlStatement := `UPDATE student SET tokenj = $1 WHERE cmkl_email = $2;`
-
-		// _, err = db.Exec(sqlStatement, rawIDToken, mail)
-		// if err != nil {
-		// 	panic(err)
-		// 	}
-		fmt.Println("passed UPDATE")
+	claims := customClaims{
+		FristName: first_name,
+		LastName:  last_name,
+		CmklMail:  cmkl_email,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: 15000,
+			Issuer:    "nameOfWebsiteHere",
+		},
 	}
 
-	http.Redirect(w, r, "/account", http.StatusSeeOther)
+	jwttoken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, err := jwttoken.SignedString([]byte("secureSecretText"))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	bearer := "Bearer " + signedToken
+	fmt.Println(bearer)
+	w.Header().Add("Authorization", bearer)
+	// contents, err := ioutil.ReadAll(response.Body)
+	fmt.Fprintf(w, "%s", contents)
+	// http.Redirect(w, r, "/", http.StatusSeeOther)
 }
