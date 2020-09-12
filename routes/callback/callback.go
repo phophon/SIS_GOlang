@@ -1,15 +1,11 @@
 package callback
 
 import (
-	"bytes"
 	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
-
-	// "reflect"
-	// "encoding/json"
 
 	"github.com/dgrijalva/jwt-go"
 	_ "github.com/lib/pq"
@@ -28,18 +24,18 @@ const (
 	sslmode  = "require"
 )
 
-var (
-	googleOauthConfig = &oauth2.Config{
-		RedirectURL:  "https://omega-next.cmkl.ac.th/api/v1/GoogleCallback",
-		ClientID:     "346969593881-rhso1lgkgg6n5fgmqm05odobpemtsjae.apps.googleusercontent.com",
-		ClientSecret: "0QKs98ImeI4FyX_3_VURaQXu",
-		Scopes: []string{"https://www.googleapis.com/auth/userinfo.profile",
-			"https://www.googleapis.com/auth/userinfo.email"},
-		Endpoint: google.Endpoint,
-	}
-	// Some random string, random for each request
-	oauthStateString = "random"
-)
+// var (
+// 	googleOauthConfig = &oauth2.Config{
+// 		RedirectURL:  "https://omega-next.cmkl.ac.th/api/v1/GoogleCallback",
+// 		ClientID:     "346969593881-rhso1lgkgg6n5fgmqm05odobpemtsjae.apps.googleusercontent.com",
+// 		ClientSecret: "0QKs98ImeI4FyX_3_VURaQXu",
+// 		Scopes: []string{"https://www.googleapis.com/auth/userinfo.profile",
+// 			"https://www.googleapis.com/auth/userinfo.email"},
+// 		Endpoint: google.Endpoint,
+// 	}
+// 	// Some random string, random for each request
+// 	oauthStateString = "random"
+// )
 
 type customClaims struct {
 	FristName string
@@ -48,50 +44,48 @@ type customClaims struct {
 	jwt.StandardClaims
 }
 
-// type Info struct {
-// 	Id             string
-// 	email          string
-// 	verified_email string
-// 	name           string
-// 	given_name     string
-// 	family_name    string
-// 	picture        string
-// 	locale         string
-// 	hd             string
-// }
-reqBody, err := json.Marshal(map[string]string{})
+type Token struct {
+    Data struct{
+		AccessToken string
+	}
+}
 
 func CallbackHandler(w http.ResponseWriter, r *http.Request) {
-	resp, err := http.Post("http://localhost:8910/api/v1/home",
-		"application/json", bytes.NewBuffer(reqBody))
-	if err != nil {
-		print(err)
-	}
 
-	fmt.Println("Body ===== ", resp)
+	// b, err := ioutil.ReadAll(r.Body)
+	// defer r.Body.Close()
+	// if err != nil {
+	// 	http.Error(w, err.Error(), 500)
+	// 	return
+	// }
+	// fmt.Println("RequstBodyFormat ===== ", string(b))
+
+	var t Token
+    json.NewDecoder(r.Body).Decode(&t)
+
+	fmt.Println("RequstBody ===== ", t.Data.AccessToken)
 
 	var cmkl_email string
 	var first_name string
 	var last_name string
 	var profile map[string]interface{}
 
-	state := r.FormValue("state")
-	if state != oauthStateString {
-		fmt.Printf("invalid oauth state, expected '%s', got '%s'\n", oauthStateString, state)
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-		return
-	}
+	// state := r.FormValue("state")
+	// if state != oauthStateString {
+	// 	fmt.Printf("invalid oauth state, expected '%s', got '%s'\n", oauthStateString, state)
+	// 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	// 	return
+	// }
 
-	code := r.FormValue("code")
-	token, err := googleOauthConfig.Exchange(oauth2.NoContext, code)
-	if err != nil {
-		fmt.Println("Code exchange failed with '%s'\n", err)
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-		return
-	}
+	// code := r.FormValue("code")
+	// token, err := googleOauthConfig.Exchange(oauth2.NoContext, code)
+	// if err != nil {
+	// 	fmt.Println("Code exchange failed with '%s'\n", err)
+	// 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	// 	return
+	// }
 
-	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
-	fmt.Println(token.AccessToken)
+	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + t.Data.AccessToken)
 	defer response.Body.Close()
 	contents, err := ioutil.ReadAll(response.Body)
 	if err != nil {
@@ -136,6 +130,7 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 			Issuer:    "nameOfWebsiteHere",
 		},
 	}
+	fmt.Println(claims)
 
 	jwttoken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := jwttoken.SignedString([]byte("secureSecretText"))

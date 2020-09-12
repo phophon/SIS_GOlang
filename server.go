@@ -116,22 +116,6 @@ var HomePage = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	emergencyContact.Email = "montean226@hotmail.com"
 	data.Emergency[1] = emergencyContact
 
-	// reqBody, err := json.Marshal(map[string]string{})
-
-	// resp, err := http.Post("http://localhost:8910/api/v1/profile",
-	// 	"application/json", bytes.NewBuffer(reqBody))
-	// if err != nil {
-	// 	print(err)
-	// }
-
-	// defer resp.Body.Close()
-	// body, err := ioutil.ReadAll(resp.Body)
-	// if err != nil {
-	// 	print(err)
-	// }
-	// fmt.Println(string(body))
-	// fmt.Fprint(w, string(body))
-
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	json.NewEncoder(w).Encode(data)
 })
@@ -150,14 +134,34 @@ func enableCors(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
 
+type Input struct {
+    Name string `json:"name"`
+}
+
+func CallbackHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Request ===== ", r)
+
+	// b, err := ioutil.ReadAll(r.Body)
+	// defer r.Body.Close()
+	// if err != nil {
+	// 	http.Error(w, err.Error(), 500)
+	// 	return
+	// }
+
+	var t Input
+    json.NewDecoder(r.Body).Decode(&t)
+
+	fmt.Println("Body ===== ", t.Name)
+}
+
 func StartServer() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", handleMain)
 	r.HandleFunc("/api/v1/login", handleGoogleLogin)
-	r.HandleFunc("/api/v1/GoogleCallback", callback.CallbackHandler)
+	r.HandleFunc("/api/v1/GoogleCallback", callback.CallbackHandler).Methods("POST")
 	r.HandleFunc("/api/v1/home", HomePage).Methods("POST")
-	r.HandleFunc("/api/v1/callback", callback.CallbackHandler).Methods("GET")
+	// r.HandleFunc("/api/v1/GoogleCallback", CallbackHandler).Methods("POST")
 	r.HandleFunc("/api/v1/profile", api.ProfileApiHandler).Methods("GET")
 	r.HandleFunc("/api/v1/profile", api.UpdateProfileHandler).Methods("POST")
 	r.HandleFunc("/api/v1/enroll", api.EnrollmentApiHandler).Methods("GET")
