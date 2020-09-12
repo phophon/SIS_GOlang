@@ -9,8 +9,6 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	_ "github.com/lib/pq"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 
 	"fmt"
 )
@@ -143,5 +141,5 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Authorization", bearer)
 	// contents, err := ioutil.ReadAll(response.Body)
 	// fmt.Fprintf(w, "%s", contents)
-	http.Redirect(w, r, "/account", http.StatusSeeOther)
+	// http.Redirect(w, r, "/account", http.StatusSeeOther)
 }
