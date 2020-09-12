@@ -6,11 +6,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"fmt"
 
 	"github.com/dgrijalva/jwt-go"
 	_ "github.com/lib/pq"
 
-	"fmt"
 )
 
 const (
@@ -48,6 +48,10 @@ type Token struct {
 	}
 }
 
+type JWT struct{
+	Key string
+}
+
 func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	// b, err := ioutil.ReadAll(r.Body)
@@ -67,6 +71,7 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	var first_name string
 	var last_name string
 	var profile map[string]interface{}
+	var token JWT
 
 	// state := r.FormValue("state")
 	// if state != oauthStateString {
@@ -95,6 +100,7 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("ugh: ", err)
 	}
 	fmt.Println("profile: ", profile)
+	fmt.Println("picture: ", profile["picture"].(string))
 	mail := profile["email"].(string)
 
 	// Qurry
@@ -116,6 +122,12 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 	}
+	sqlStatement := `UPDATE student SET photo = $1 WHERE cmkl_email = $2`
+	_, err = db.Exec(sqlStatement, profile["picture"].(string), mail)
+	if err != nil {
+		panic(err)
+	}
+	
 	fmt.Println(cmkl_email)
 	fmt.Println("passed Callback")
 
@@ -136,8 +148,12 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 		return
 	}
+
 	bearer := "Bearer " + signedToken
+	token.Key = bearer
 	fmt.Println(bearer)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	json.NewEncoder(w).Encode(token)
 	w.Header().Add("Authorization", bearer)
 	// contents, err := ioutil.ReadAll(response.Body)
 	// fmt.Fprintf(w, "%s", contents)
