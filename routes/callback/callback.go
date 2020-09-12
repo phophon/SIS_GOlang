@@ -1,6 +1,7 @@
 package callback
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"io/ioutil"
@@ -58,8 +59,16 @@ type customClaims struct {
 // 	locale         string
 // 	hd             string
 // }
+reqBody, err := json.Marshal(map[string]string{})
 
 func CallbackHandler(w http.ResponseWriter, r *http.Request) {
+	resp, err := http.Post("http://localhost:8910/api/v1/home",
+		"application/json", bytes.NewBuffer(reqBody))
+	if err != nil {
+		print(err)
+	}
+
+	fmt.Println("Body ===== ", resp)
 
 	var cmkl_email string
 	var first_name string
