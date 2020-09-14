@@ -3,14 +3,13 @@ package callback
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"fmt"
 
 	"github.com/dgrijalva/jwt-go"
 	_ "github.com/lib/pq"
-
 )
 
 const (
@@ -43,12 +42,12 @@ type customClaims struct {
 }
 
 type Token struct {
-    Data struct{
+	Data struct {
 		AccessToken string
 	}
 }
 
-type JWT struct{
+type JWT struct {
 	Key string
 }
 
@@ -63,7 +62,7 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	// fmt.Println("RequstBodyFormat ===== ", string(b))
 
 	var t Token
-    json.NewDecoder(r.Body).Decode(&t)
+	json.NewDecoder(r.Body).Decode(&t)
 
 	fmt.Println("RequstBody ===== ", t.Data.AccessToken)
 
@@ -127,7 +126,7 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	fmt.Println(cmkl_email)
 	fmt.Println("passed Callback")
 
@@ -150,8 +149,8 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	bearer := "Bearer " + signedToken
-	token.Key = bearer
-	fmt.Println(bearer)
+	token.Key = signedToken
+	fmt.Println(signedToken)
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	json.NewEncoder(w).Encode(token)
 	w.Header().Add("Authorization", bearer)
