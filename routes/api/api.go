@@ -1,11 +1,9 @@
 package api
 
 import (
-	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -366,23 +364,25 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 	var address_uuid sql.NullString
 	var emergency_uuid sql.NullString
 
-	reqBody, err := json.Marshal(map[string]string{})
+	json.NewDecoder(r.Body).Decode(&data)
 
-	resp, err := http.Post("http://localhost:8910/api/v1/home",
-		"application/json", bytes.NewBuffer(reqBody))
-	if err != nil {
-		print(err)
-	}
+	// reqBody, err := json.Marshal(map[string]string{})
 
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		print(err)
-	}
-	// fmt.Println(string(body))
-	fmt.Fprint(w, string(body))
+	// resp, err := http.Post("http://localhost:8910/api/v1/home",
+	// 	"application/json", bytes.NewBuffer(reqBody))
+	// if err != nil {
+	// 	print(err)
+	// }
 
-	json.Unmarshal([]byte(string(body)), &data)
+	// defer resp.Body.Close()
+	// body, err := ioutil.ReadAll(resp.Body)
+	// if err != nil {
+	// 	print(err)
+	// }
+	fmt.Println(data)
+	fmt.Fprint(w, data)
+
+	// json.Unmarshal([]byte(string(body)), &data)
 	// fmt.Println(data)
 
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s", host, port, user, password, dbname, sslmode)
@@ -398,6 +398,7 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("Update Profile")
 
 	result, err := db.Query(`SELECT uuid FROM programenrollment WHERE uuid = $1;`, data.UUID)
 	if err != nil {
@@ -415,25 +416,25 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 		var programenrollmentid int
 		var programid int
 
-		result, err := db.Query(`SELECT programenrollmentid FROM programenrollment ORDER BY programenrollmentid DESC LIMIT 1;`)
+		resultPE, err := db.Query(`SELECT programenrollmentid FROM programenrollment ORDER BY programenrollmentid DESC LIMIT 1;`)
 		if err != nil {
 			panic(err)
 			log.Fatal(err)
 		}
-		for result.Next() {
-			if err := result.Scan(&programenrollmentid); err != nil {
+		for resultPE.Next() {
+			if err := resultPE.Scan(&programenrollmentid); err != nil {
 				log.Fatal(err)
 			}
 		}
 
-		resultA, err := db.Query(`SELECT programid FROM program WHERE shortname = $1;`, data.Program)
+		resultP, err := db.Query(`SELECT programid FROM program WHERE shortname = $1;`, data.Program)
 		if err != nil {
 			panic(err)
 			log.Fatal(err)
 		}
 
-		for resultA.Next() {
-			if err := resultA.Scan(&programid); err != nil {
+		for resultP.Next() {
+			if err := resultP.Scan(&programid); err != nil {
 				log.Fatal(err)
 			}
 		}
@@ -442,9 +443,9 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("inserted programenrollment")
+		fmt.Println("Inserted ProgramEnrollment")
 	} else {
-		fmt.Println("updated programenrollment")
+		fmt.Println("Updated ProgramEnrollment")
 	}
 
 	resultA, err := db.Query(`SELECT uuid FROM address WHERE uuid = $1;`, data.UUID)
@@ -461,13 +462,13 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 
 	if address_uuid.String == "" {
 		var address_id int
-		result, err := db.Query(`SELECT address_id FROM address ORDER BY address_id DESC LIMIT 1;`)
+		resultA2, err := db.Query(`SELECT address_id FROM address ORDER BY address_id DESC LIMIT 1;`)
 		if err != nil {
 			panic(err)
 			log.Fatal(err)
 		}
-		for result.Next() {
-			if err := result.Scan(&address_id); err != nil {
+		for resultA2.Next() {
+			if err := resultA2.Scan(&address_id); err != nil {
 				log.Fatal(err)
 			}
 		}
@@ -478,16 +479,31 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 				panic(err)
 			}
 		}
-		fmt.Println("inserted address")
+		fmt.Println("Inserted Address")
 	} else {
-		sqlStatement := `UPDATE address SET address = $1, city = $2, state = $3, zip = $4, country = $5, uuid = $6 WHERE uuid = $7;`
-		for _, s := range data.Useraddress {
-			_, err = db.Exec(sqlStatement, s.Addressstatus, s.City, s.State, s.Zip, s.Country, data.UUID, data.UUID)
+		var AddressID int
+		var listAddressID []int
+		resultA2, err := db.Query(`SELECT address_id FROM address;`)
+		if err != nil {
+			panic(err)
+			log.Fatal(err)
+		}
+		for resultA2.Next() {
+			if err := resultA2.Scan(&AddressID); err != nil {
+				log.Fatal(err)
+			} else {
+				listAddressID = append(listAddressID, AddressID)
+			}
+		}
+
+		sqlStatement := `UPDATE address SET address = $1, city = $2, state = $3, zip = $4, country = $5 WHERE address_id = $6;`
+		for i, s := range data.Useraddress {
+			_, err = db.Exec(sqlStatement, s.Addressstatus, s.City, s.State, s.Zip, s.Country, listAddressID[i])
 			if err != nil {
 				panic(err)
 			}
 		}
-		fmt.Println("updated address")
+		fmt.Println("Updated Address")
 	}
 
 	resultE, err := db.Query(`SELECT uuid FROM emergency WHERE uuid = $1;`, data.UUID)
@@ -504,13 +520,13 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 	if emergency_uuid.String == "" {
 		var emergency_id int
 
-		result, err := db.Query(`SELECT emergency_id FROM emergency ORDER BY emergency_id DESC LIMIT 1;`)
+		resultE2, err := db.Query(`SELECT emergency_id FROM emergency ORDER BY emergency_id DESC LIMIT 1;`)
 		if err != nil {
 			panic(err)
 			log.Fatal(err)
 		}
-		for result.Next() {
-			if err := result.Scan(&emergency_id); err != nil {
+		for resultE2.Next() {
+			if err := resultE2.Scan(&emergency_id); err != nil {
 				log.Fatal(err)
 			}
 		}
@@ -521,29 +537,31 @@ var UpdateProfileHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.
 				panic(err)
 			}
 		}
-		fmt.Println("inserted address")
+		fmt.Println("Inserted Emergency")
 	} else {
-		var emergency_id int
+		var EmergencyID int
+		var ListEmergencyID []int
 
-		result, err := db.Query(`SELECT emergency_id FROM emergency WHERE uuid = $1;`, data.UUID)
+		resultE3, err := db.Query(`SELECT emergency_id FROM emergency WHERE uuid = $1;`, data.UUID)
 		if err != nil {
 			panic(err)
 			log.Fatal(err)
 		}
-		for result.Next() {
-			if err := result.Scan(&emergency_id); err != nil {
+		for resultE3.Next() {
+			if err := resultE3.Scan(&EmergencyID); err != nil {
 				log.Fatal(err)
 			}
+			ListEmergencyID = append(ListEmergencyID, EmergencyID)
 		}
 
 		sqlStatement := `UPDATE emergency SET first_name = $1, last_name = $2, relationship = $3, phone = $4, email = $5, uuid = $6 WHERE emergency_id = $7;`
 		for i, s := range data.Emergency {
-			_, err = db.Exec(sqlStatement, s.Firstname, s.Lastname, s.Relationship, s.Phone, s.Email, data.UUID, emergency_id-1+i)
+			_, err = db.Exec(sqlStatement, s.Firstname, s.Lastname, s.Relationship, s.Phone, s.Email, data.UUID, ListEmergencyID[i])
 			if err != nil {
 				panic(err)
 			}
 		}
-		fmt.Println("updated address")
+		fmt.Println("Updated Emergency")
 
 	}
 })
